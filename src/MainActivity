@@ -1,0 +1,150 @@
+package com.kanzelmeyer.json;
+
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.util.Date;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.os.Bundle;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.view.Menu;
+import android.view.View;
+import android.widget.Toast;
+
+public class MainActivity extends Activity {
+
+	final String FILENAME = "log.json";
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
+	}
+
+	/* Click Listener for the buttons on the main screen */
+	public void clickListener(View v) {
+
+		switch (v.getId()) {
+
+		case R.id.button_log:
+			logDateTime();
+			break;
+
+		case R.id.button_view_log:
+			Intent viewLog = new Intent(this, LogActivity.class);
+			startActivity(viewLog);
+			break;
+
+		default:
+			break;
+		}
+	}
+
+
+	private void logDateTime() {
+
+		// Variables
+		String date = DateFormat.getDateInstance().format(new Date()); 
+		String time = DateFormat.getTimeInstance().format(new Date());
+		String desc = "Entry Created";
+		JSONArray completeArray = new JSONArray();
+
+		/*
+		 * Get the current JSON object from the file. The goal is to get the
+		 * entire contents of the JSON file (which is a JSON array), convert it
+		 * to a JSON array, add a new entry object, convert the new JSON object
+		 * to a string, then overwrite the JSON file with the new JSON array
+		 */
+
+		try {
+			// Open the JSON file and initialize a string builder
+			FileInputStream in = openFileInput(FILENAME);
+			InputStreamReader inputStreamReader = new InputStreamReader(in);
+			BufferedReader bufferedReader = new BufferedReader(
+					inputStreamReader);
+			StringBuilder sb = new StringBuilder();
+			String line;
+			// Read the existing content in the JSON file and add it to the
+			// string builder
+			while ((line = bufferedReader.readLine()) != null) {
+				sb.append(line);
+			}
+			/*
+			 * If the string builder is not empty (ie, the file was not empty),
+			 * we convert the contents to a JSON array and store it in a local
+			 * variable
+			 */
+			if (sb.toString() != "") {
+				JSONArray temp_arr = new JSONArray(sb.toString());
+				completeArray = temp_arr;
+			}
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		catch (JSONException e) {
+			e.printStackTrace();
+		}
+
+		// Initialize the JSON object for the new entry
+		JSONObject entry = new JSONObject();
+		// Initialize the JSON object that will contain the entry object
+		JSONObject finalEntry = new JSONObject();
+
+		try {
+			// Add the time and date to the entry object
+			entry.put("date", date);
+			entry.put("time", time);
+			entry.put("description", desc);
+			// Add the entry object to a new object called "entry"
+			finalEntry.put("entry", entry);
+			/*
+			 * Finally add the completed "entry" object into the array that was
+			 * parsed from the JSON file. If the file was empty this entry will
+			 * be the first object in the array. If the file was not empty this
+			 * entry will be added to the end of the array
+			 */
+			completeArray.put(finalEntry);
+
+			// Convert the complete array in to a string
+			String jsonEntry = completeArray.toString();
+
+			// Write complete array to the file
+			FileOutputStream fos = openFileOutput(FILENAME,
+					Context.MODE_PRIVATE);
+			fos.write(jsonEntry.getBytes());
+			fos.close();
+			// Notify that an entry has been created
+			Toast toast = Toast.makeText(getApplicationContext(),
+					"Entry Created", Toast.LENGTH_LONG);
+			toast.show();
+		}
+
+		catch (JSONException e) {
+			e.printStackTrace();
+		}
+
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+}
